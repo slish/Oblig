@@ -51,11 +51,11 @@ Input: Int x
 11.	 | | print(itr.next)
 */
 
-public class Teque<T> {
+public class Teque {
 
     // Bygger opp Tequet som to Deques.
-    Deque<Integer> first = new ArrayDeque<Integer>();
-    Deque<Integer> last = new ArrayDeque<Integer>();
+    Deque<Integer> first = new ArrayDeque<>();
+    Deque<Integer> last = new ArrayDeque<>();
 
     /* Om første deque er størst, flytt siste integer i første deque til 
        første integer i siste deque før nytt integer settes inn */
@@ -120,22 +120,19 @@ public class Teque<T> {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         int N = Integer.parseInt(br.readLine());
 
-        Teque<Integer> myTeque = new Teque<Integer>();
+        Teque myTeque = new Teque();
         
         for (int i = 0; i < N; i++){
             String[] line = br.readLine().split(" ");
             String cmd = line[0];
             int x = Integer.parseInt(line[1]);
             try{
+                // Hent ut metode fra teksten og kjør den med x som input
                 Method method = myTeque.getClass().getMethod(cmd, int.class);
                 method.invoke(myTeque, x);
-            } catch(NoSuchMethodException e){
+            } catch(NoSuchMethodException|IllegalAccessException|InvocationTargetException e){
                 System.out.println(e.toString());
-            } catch(IllegalAccessException e){
-                System.out.println(e.toString());
-            } catch(InvocationTargetException e){
-                System.out.println(e.toString());
-            }
+            } 
         }
     }
 }
