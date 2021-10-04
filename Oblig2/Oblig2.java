@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.PriorityQueue;
+import java.util.HashSet;
 
 public class Oblig2{
 
@@ -63,10 +64,10 @@ public class Oblig2{
 
             for(int i = 0; i < actorsInMovie.size(); i++){
                 Node thisActor = actorsInMovie.get(i);
+
                 // Knytt hver skuespiller til hver skuespiller i den resterende delen 
                 // av listen. De har allerede blitt knyttet til skuespillere som kommer
                 // før dem i listen, og kan overse disse.
-
                 for(int j = i+1; j < actorsInMovie.size(); j++){
                     Node nextActor = actorsInMovie.get(j);
                     thisActor.addNeighbour(rating, nextActor, m.getTitle());
@@ -81,8 +82,7 @@ public class Oblig2{
             Edges += n.getEdges().size();
         }
 
-        // Jeg valgte å implementere grafen med parallelle like kanter så må 
-        // dele edges på 2 for å eliminere de som peker på hverandre
+        // Deler edges på 2 for å eliminere de som peker på hverandre
         Edges /= 2;
         System.out.println("Oppgave 1 \n");
         System.out.println("Nodes: " + Nodes);
@@ -151,13 +151,8 @@ public class Oblig2{
         // Lag en edge fra denne noden til nabo, og fra nabo til denne noden
         public void addNeighbour(float weight, Node neighbour, String movieTitle){
             Edge thisEdge = new Edge(weight, this, neighbour, movieTitle);
-            Edge neighbourEdge = new Edge(weight, neighbour, this, movieTitle);
-            // Setter paralelle kanter som attributer slik at de kan nås og 
-            // elimineres
-            //thisEdge.setParallelEdge(neighbourEdge);
-            //neighbourEdge.setParallelEdge(thisEdge);
             this.addEdge(thisEdge);
-            neighbour.addEdge(neighbourEdge);
+            neighbour.addEdge(thisEdge);
         }
 
         public void addEdge(Edge e){
@@ -178,25 +173,21 @@ public class Oblig2{
 
     static class Edge implements Comparable<Edge>{
         float weight;
-        Node toNode;
-        Node fromNode;
-        //Edge parallelEdge;
+        Node n1;
+        Node n2;
         String movieName;
-        String edgeId;
 
-        public Edge(float weight,  Node fromNode, Node toNode, String movieName){
+        public Edge(float weight,  Node n1, Node n2, String movieName){
             this.weight = weight;
-            this.fromNode = fromNode;
-            this.toNode = toNode;
+            this.n1 = n1;
+            this.n2 = n2;
             this.movieName = movieName;
-            edgeId = fromNode.getName() + toNode.getName();
         }
 
-        public Node getDest(){return toNode;}
-        public Node getOrig(){return fromNode;}
+        public Node getn1(){return n1;}
+        public Node getn2(){return n2;}
         public String getMovieName(){return movieName;}
         public float getWeight(){return weight;}
-        //public void setParallelEdge(Edge e){parallelEdge = e;}
 
         @Override
         public int compareTo(Edge e){
@@ -252,15 +243,18 @@ public class Oblig2{
             int numNodesInLayer = queue.size();
             for(int i = 0; i < numNodesInLayer; i++){
                 Node currentNode = queue.poll();
-
-                int edgeIndex = 0;
                 
                 for(Edge e : currentNode.getEdges()){
-                    Node destNode = e.getDest();
+
+                    Node destNode;
+                    if(currentNode == e.getn1()){
+                        destNode = e.getn2();
+                    }else{
+                        destNode = e.getn1();
+                    }
 
                     if(!visited.contains(destNode)){
                         destNode.setLeadingEdge(e);
-                        edgeIndex ++;
                         newEdges.add(e);
                         newNodes.add(destNode);
                         queue.add(destNode);
@@ -268,9 +262,11 @@ public class Oblig2{
                     }
                     
                     if(destNode.equals(toActor)){
+
                         edgeLayers.add(newEdges);
                         nodeLayers.add(newNodes);
                         ArrayList<String> result = new ArrayList<>();
+
                         Node indexNode = destNode;
 
                         for(int j = edgeLayers.size()-1; j != -1; j--){
@@ -278,7 +274,11 @@ public class Oblig2{
                             String movieName = indexNode.getLeadingEdge().getMovieName();
                             float rating = indexNode.getLeadingEdge().getWeight();
                             result.add("===[ " + movieName + " (" + rating + ") ===>  " + actor);
-                            indexNode = indexNode.getLeadingEdge().getOrig();
+                            if (indexNode == indexNode.getLeadingEdge().getn1()){
+                                indexNode = indexNode.getLeadingEdge().getn2();
+                            }else{
+                                indexNode = indexNode.getLeadingEdge().getn1();
+                            }
                         }
                         for(int j = result.size()-1; j != -1; j--){
                             System.out.println(result.get(j));
@@ -304,28 +304,36 @@ public class Oblig2{
         pQueue.add(fromActor);
         float currentShortestDistance = toActor.getWeight();
 
-        // Ta ut minste tuppel i kø til tomt
+        // Ta ut minste node i kø til tomt
         while(!pQueue.isEmpty()){
             Node currentNode = pQueue.poll();
 
             // Gå gjennom hver kant i noden til tuppelet
             for(Edge e : currentNode.getEdges()){
 
-                Node destNode = e.getDest();
                 float fromWeight = currentNode.getWeight();
                 float weightFunc = 10-e.getWeight();
-
                 // Om vekten på nåværende node og kant er større enn 
                 // korteste distanse funnet, bryt og prøv neste iterasjon
                 if((fromWeight + weightFunc) > currentShortestDistance){
                     continue;
+                }
+
+                Node destNode;
+                if(currentNode == e.getn1()){
+                    destNode = e.getn2();
+                }else{
+                    destNode = e.getn1();
+                }
+            
                 // Om vekt på nåværende node og kant er mindre enn vekten til 
                 // destinasjonsnode, oppdater vekt på destinasjonsnode
-                }else if((fromWeight + weightFunc) < destNode.getWeight()){
+                if((fromWeight + weightFunc) < destNode.getWeight()){
                     destNode.setLeadingEdge(e);
                     destNode.setWeight(fromWeight + weightFunc);
                     pQueue.add(destNode);
                 }
+
                 //Om node i tillegg er korrekt node, oppdater korteste distanse
                 if(destNode == toActor){
                     currentShortestDistance = destNode.getWeight();
@@ -342,7 +350,11 @@ public class Oblig2{
             String movieName = indexNode.getLeadingEdge().getMovieName();
             float rating = indexNode.getLeadingEdge().getWeight();
             result.add("===[ " + movieName + " (" + rating + ") ===>  " + actor);
-            indexNode = indexNode.getLeadingEdge().getOrig();
+            if(indexNode == indexNode.getLeadingEdge().getn1()){
+                indexNode = indexNode.getLeadingEdge().getn2();
+            }else{
+                indexNode = indexNode.getLeadingEdge().getn1();
+            }
         }
         for(int j = result.size()-1; j != -1; j--){
             System.out.println(result.get(j));
@@ -352,72 +364,65 @@ public class Oblig2{
 
     static void oppgave4(HashMap<String, Node> allNodes){
         // Beholder for komponentene vi skal bygge opp
-        ArrayList<ArrayList<Node>> componentBeholder = new ArrayList<>();
-
-        /*PriorityQueue<Edge> allEdges = new PriorityQueue<>();
-        ArrayList<Node> checked = new ArrayList<>();
+        HashSet<HashSet<Node>> componentBeholder = new HashSet<>();
+        HashSet<Edge> allEdges = new HashSet<>();
 
         for(Node n : allNodes.values()){
-            checked.add(n);
             for(Edge e : n.getEdges()){
-                // Viss til-noden til kanten ikke er sjekket fra før, 
-                // ta med kant i beholdning
-                if(!checked.contains(e.getDest())){
-                    allEdges.add(e);
-                }
+                allEdges.add(e);
             }
-        }
-
-        System.out.println("All edges er på størrelse: " + allEdges.size());
-
-        Edge currentEdge;*/
-
-        /*while(!allEdges.isEmpty()){
-            currentEdge = allEdges.poll();
-        }*/
-
-        /*// Legger til alle noder i kø for å kunne trekke ut en og en
-        ArrayList<Node> nodeliste = new ArrayList<>();
-        for(Node n : allNodes.values()){
-            nodeliste.add(n);
-        }
-
-        // Plukker ut en node og legger den til i en beholder som skal 
-        // bli vår komponent
-        Node currentNode = nodeliste.remove(0);
-        Queue<Node> nodeChecker = new LinkedList<>();
-        ArrayList<Node> currentComponent = new ArrayList<>();
-        currentComponent.add(currentNode);
-        nodeChecker.add(currentNode);*/
-
-        /*while(!nodeChecker.isEmpty()){
-            // Plukk ut node fra kø
-            currentNode = nodeChecker.poll();
-            for(Edge e : currentNode.getEdges()){
-                // For hver nabo til noden, sjekk om den allerede er med i 
-                // komponent. Om ikke legg den til i komponent og kø
-                Node destNode = e.getDest();
-                if(!currentComponent.contains(destNode)){
-                    currentComponent.add(destNode);
-                    nodeChecker.add(destNode);
-                }
-            }
-        }
-        componentBeholder.add(currentComponent);
-        System.out.println(componentBeholder.get(0).size());*/
-    }
-
-    /*static class Component{
-        ArrayList<Node> nodesInComponent;
-
-        public Component(){
         }
         
-        public void addNode(Node n){nodesInComponent.add(n);}
-        public ArrayList<Node> getNodes(){return nodesInComponent;}
+        while(!allEdges.isEmpty()){
+            Edge currentEdge = null;
+            // Hent ut vilkårlig edge fra Hashset
+            for(Edge e : allEdges){
+                currentEdge = e;
+                break;
+            }
+            allEdges.remove(currentEdge);
 
-        public void mergeComponent(Component c){
+            Queue<Node> nodesToCheck = new LinkedList<>();
+            HashSet<Node> currentComponent = new HashSet<>();
+            currentComponent.add(currentEdge.getn1());
+            currentComponent.add(currentEdge.getn2());
+            nodesToCheck.add(currentEdge.getn1());
+            nodesToCheck.add(currentEdge.getn2());
 
+            while(!nodesToCheck.isEmpty()){
+                Node currentNode = nodesToCheck.poll();
+                for(Edge e : currentNode.getEdges()){
+                    allEdges.remove(e);
+                    Node destNode;
+                    if(currentNode == e.getn1()){
+                        destNode = e.getn2();
+                    }else{
+                        destNode = e.getn1();
+                    }
+                    if(!currentComponent.contains(destNode)){
+                        currentComponent.add(destNode);
+                        nodesToCheck.add(destNode);
+                    }
+                }
+            }
+            componentBeholder.add(currentComponent);
         }
-    }*/
+
+        for(HashSet<Node> c : componentBeholder){
+            int componentSize = c.size();
+        }
+
+
+        /*HashMap<Integer, HashSet<Node>> componentCounter = new HashMap<>();
+        for(HashSet<Node> e : componentBeholder){
+            int integer = e.size();
+            componentCounter.put(integer, e);
+        }
+        System.out.println(componentCounter.size());
+        System.out.println(componentCounter.get(2).size());*/
+        /*for(int i : componentCounter.keySet()){
+            System.out.println("There are " + i + " components of size " + i);
+        }*/
+    }
+
 }
