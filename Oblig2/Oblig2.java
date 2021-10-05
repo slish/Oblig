@@ -32,6 +32,8 @@ public class Oblig2{
             movieDict.put(lineSplit[0], movie);
         }
 
+        movieReader.close();
+
         InputStreamReader actorIn = new InputStreamReader(
             new FileInputStream("actors.tsv"), "UTF-8");
         BufferedReader actorReader = new BufferedReader(actorIn);
@@ -56,6 +58,8 @@ public class Oblig2{
             }
             allNodes.put(lineSplit[0], actor);
         }
+
+        actorReader.close();
 
         // For hver film i filmbiblioteket, knytt alle skuespillere som naboer
         for(Movie m : movieDict.values()){
@@ -88,9 +92,7 @@ public class Oblig2{
         System.out.println("Nodes: " + Nodes);
         System.out.println("Edges: " + Edges + "\n");
 
-        // Kjører oppgave 2 og 3 i egne metoder som er nederst i fil.
-        // Sender med skuespillere i 2 og 3 og i tillegg alle nodene til 
-        // oppgave 3.
+        // Kjører oppgave 2, 3 og 4 i egne metoder som er nederst i koden
 
         System.out.println("Oppgave 2 \n");
 
@@ -102,21 +104,16 @@ public class Oblig2{
 
         System.out.println("Oppgave 3 \n");
 
-        /*oppgave3(allNodes.get("nm2255973"), 
-                    allNodes.get("nm0000460"), 
+        oppgave3(allNodes.get("nm2255973"), allNodes.get("nm0000460"), 
                     allNodes);
-        oppgave3(allNodes.get("nm0424060"), 
-                    allNodes.get("nm0000243"), 
+        oppgave3(allNodes.get("nm0424060"), allNodes.get("nm0000243"), 
                     allNodes);
-        oppgave3(allNodes.get("nm4689420"), 
-                    allNodes.get("nm0000365"), 
+        oppgave3(allNodes.get("nm4689420"), allNodes.get("nm0000365"), 
                     allNodes);
-        oppgave3(allNodes.get("nm0000288"), 
-                    allNodes.get("nm0001401"), 
+        oppgave3(allNodes.get("nm0000288"), allNodes.get("nm0001401"), 
                     allNodes);
-        oppgave3(allNodes.get("nm0031483"),
-                    allNodes.get("nm0931324"), 
-                    allNodes);*/
+        oppgave3(allNodes.get("nm0031483"), allNodes.get("nm0931324"), 
+                    allNodes);
 
         System.out.println("Oppgave 4 \n");
 
@@ -223,21 +220,18 @@ public class Oblig2{
     }
 
     static void oppgave2(Node fromActor, Node toActor){
+
         System.out.println(fromActor.getName());
         Queue<Node> queue = new LinkedList<>();
         ArrayList<Node> visited = new ArrayList<>();
-        ArrayList<ArrayList<Edge>> edgeLayers = new ArrayList<>();
-        ArrayList<ArrayList<Node>> nodeLayers = new ArrayList<>();
+        // Teller for antall lag
+        int numLayers = 0;
 
         queue.add(fromActor);
         visited.add(fromActor);
-        nodeLayers.add(visited);
 
         outerloop:
         while(!queue.isEmpty()){
-            ArrayList<Edge> newEdges = new ArrayList<>();
-            ArrayList<Node> newNodes = new ArrayList<>();
-
             // Hvor mange ganger vi skal kjøre loopen, for å vite hvor mange noder
             // som skal legges til dette laget
             int numNodesInLayer = queue.size();
@@ -255,21 +249,16 @@ public class Oblig2{
 
                     if(!visited.contains(destNode)){
                         destNode.setLeadingEdge(e);
-                        newEdges.add(e);
-                        newNodes.add(destNode);
                         queue.add(destNode);
                         visited.add(destNode);
                     }
                     
                     if(destNode.equals(toActor)){
 
-                        edgeLayers.add(newEdges);
-                        nodeLayers.add(newNodes);
                         ArrayList<String> result = new ArrayList<>();
-
                         Node indexNode = destNode;
 
-                        for(int j = edgeLayers.size()-1; j != -1; j--){
+                        for(int j = numLayers; j != -1; j--){
                             String actor = indexNode.getName();
                             String movieName = indexNode.getLeadingEdge().getMovieName();
                             float rating = indexNode.getLeadingEdge().getWeight();
@@ -288,8 +277,7 @@ public class Oblig2{
                     }
                 }
             }
-            edgeLayers.add(newEdges);
-            nodeLayers.add(newNodes);
+            numLayers++;
         }
     }
 
@@ -310,7 +298,6 @@ public class Oblig2{
 
             // Gå gjennom hver kant i noden til tuppelet
             for(Edge e : currentNode.getEdges()){
-
                 float fromWeight = currentNode.getWeight();
                 float weightFunc = 10-e.getWeight();
                 // Om vekten på nåværende node og kant er større enn 
@@ -320,6 +307,7 @@ public class Oblig2{
                 }
 
                 Node destNode;
+                
                 if(currentNode == e.getn1()){
                     destNode = e.getn2();
                 }else{
@@ -331,12 +319,11 @@ public class Oblig2{
                 if((fromWeight + weightFunc) < destNode.getWeight()){
                     destNode.setLeadingEdge(e);
                     destNode.setWeight(fromWeight + weightFunc);
-                    pQueue.add(destNode);
-                }
-
-                //Om node i tillegg er korrekt node, oppdater korteste distanse
-                if(destNode == toActor){
-                    currentShortestDistance = destNode.getWeight();
+                    if(destNode != toActor){
+                        pQueue.add(destNode);
+                    }else{
+                        currentShortestDistance = destNode.getWeight();
+                    }
                 }
             }
         }
@@ -345,7 +332,7 @@ public class Oblig2{
         Node indexNode = toActor;
         
         // Kjør gjennom ledende stier til indexNoden er start-skuespiller
-        while(!(indexNode==fromActor)){
+        while(indexNode!=fromActor){
             String actor = indexNode.getName();
             String movieName = indexNode.getLeadingEdge().getMovieName();
             float rating = indexNode.getLeadingEdge().getWeight();
@@ -363,6 +350,7 @@ public class Oblig2{
     }
 
     static void oppgave4(HashMap<String, Node> allNodes){
+
         // Beholder for komponentene vi skal bygge opp
         HashSet<HashSet<Node>> componentBeholder = new HashSet<>();
         HashSet<Edge> allEdges = new HashSet<>();
@@ -372,7 +360,7 @@ public class Oblig2{
                 allEdges.add(e);
             }
         }
-        
+
         while(!allEdges.isEmpty()){
             Edge currentEdge = null;
             // Hent ut vilkårlig edge fra Hashset
@@ -408,21 +396,31 @@ public class Oblig2{
             componentBeholder.add(currentComponent);
         }
 
-        for(HashSet<Node> c : componentBeholder){
-            int componentSize = c.size();
-        }
-
-
-        /*HashMap<Integer, HashSet<Node>> componentCounter = new HashMap<>();
+        HashMap<Integer, Integer> componentCounter = new HashMap<>();
         for(HashSet<Node> e : componentBeholder){
-            int integer = e.size();
-            componentCounter.put(integer, e);
+            if(componentCounter.containsKey(e.size())){
+                int iterator = componentCounter.get(e.size()) + 1;
+                componentCounter.replace(e.size(), iterator);
+            }else{
+                componentCounter.put(e.size(), 1);
+            }
         }
-        System.out.println(componentCounter.size());
-        System.out.println(componentCounter.get(2).size());*/
-        /*for(int i : componentCounter.keySet()){
-            System.out.println("There are " + i + " components of size " + i);
-        }*/
-    }
 
+        // Siden jeg brukte kanter for å lage komponenter er alle noder
+        // uten kanter ikke en komponent. Regner meg derfor hvor mange
+        // noder som er i en komponent slik at jeg kan trekke dette fra
+        // totalsummen av noder og få hvor mange komponenter som er av 
+        // størrelse 1, selv om disse teknisk sett ikke finnes i min
+        // løsing av oppgaven.
+        int nodesInComponent = 0;
+        for(Integer i : componentCounter.keySet()){
+            nodesInComponent += componentCounter.get(i) * i;
+            System.out.println("There are " + componentCounter.get(i) + 
+                                " components of size " + i);
+        }
+
+        System.out.println("There are " + 
+                            (allNodes.size() - nodesInComponent) + 
+                            " components of size 1");
+    }
 }
