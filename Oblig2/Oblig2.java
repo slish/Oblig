@@ -96,11 +96,14 @@ public class Oblig2{
 
         System.out.println("Oppgave 2 \n");
 
-        oppgave2(allNodes.get("nm2255973"), allNodes.get("nm0000460"));
-        oppgave2(allNodes.get("nm0424060"), allNodes.get("nm0000243"));
-        oppgave2(allNodes.get("nm4689420"), allNodes.get("nm0000365"));
-        oppgave2(allNodes.get("nm0000288"), allNodes.get("nm0001401"));
-        oppgave2(allNodes.get("nm0031483"), allNodes.get("nm0931324"));
+        // Har med en boolean på slutten for å markere om metoden skal printe
+        // eller ikke. Dette grunnet at oppgave 3 gjenbruker algoritmen fra
+        // oppgave 2, og ønsker da ikke å printe ekstra
+        oppgave2(allNodes.get("nm2255973"), allNodes.get("nm0000460"), true);
+        oppgave2(allNodes.get("nm0424060"), allNodes.get("nm0000243"), true);
+        oppgave2(allNodes.get("nm4689420"), allNodes.get("nm0000365"), true);
+        oppgave2(allNodes.get("nm0000288"), allNodes.get("nm0001401"), true);
+        oppgave2(allNodes.get("nm0031483"), allNodes.get("nm0931324"), true);
 
         System.out.println("Oppgave 3 \n");
 
@@ -219,11 +222,14 @@ public class Oblig2{
         public ArrayList<Node> getActors() {return actors;}
     }
 
-    static void oppgave2(Node fromActor, Node toActor){
+    static float oppgave2(Node fromActor, Node toActor, boolean print){
 
+        // Returnerer en float da jeg bruker dette som en minimumsverdi
+        // å finne i algoritmen for oppgave 3
+        float returnFloat = 0;
         System.out.println(fromActor.getName());
         Queue<Node> queue = new LinkedList<>();
-        ArrayList<Node> visited = new ArrayList<>();
+        HashSet<Node> visited = new HashSet<>();
         // Teller for antall lag
         int numLayers = 0;
 
@@ -258,8 +264,10 @@ public class Oblig2{
                         ArrayList<String> result = new ArrayList<>();
                         Node indexNode = destNode;
 
+                        
                         for(int j = numLayers; j != -1; j--){
                             String actor = indexNode.getName();
+                            returnFloat = returnFloat + (10 - indexNode.getLeadingEdge().getWeight());
                             String movieName = indexNode.getLeadingEdge().getMovieName();
                             float rating = indexNode.getLeadingEdge().getWeight();
                             result.add("===[ " + movieName + " (" + rating + ") ===>  " + actor);
@@ -269,20 +277,23 @@ public class Oblig2{
                                 indexNode = indexNode.getLeadingEdge().getn1();
                             }
                         }
-                        for(int j = result.size()-1; j != -1; j--){
-                            System.out.println(result.get(j));
+                        if(print){
+                            for(int j = result.size()-1; j != -1; j--){
+                                System.out.println(result.get(j));
+                            }
+                            System.out.println("");
                         }
-                        System.out.println("");
                         break outerloop;
                     }
                 }
             }
             numLayers++;
         }
+        return returnFloat;
     }
 
     static void oppgave3(Node fromActor, Node toActor, HashMap<String, Node> allNodes){
-        System.out.println(fromActor.getName());
+        //System.out.println(fromActor.getName());
         PriorityQueue<Node> pQueue = new PriorityQueue<>();
 
         for (Node n : allNodes.values()){
@@ -290,7 +301,7 @@ public class Oblig2{
         }
         fromActor.setWeight(0);
         pQueue.add(fromActor);
-        float currentShortestDistance = toActor.getWeight();
+        float currentShortestDistance = oppgave2(fromActor, toActor, false);//toActor.getWeight();
 
         // Ta ut minste node i kø til tomt
         while(!pQueue.isEmpty()){
