@@ -164,9 +164,9 @@ public class Oblig2{
             if(this.weight == n.getWeight()){
                 return 0;
             } else if(this.weight > n.getWeight()){
-                return -1;
-            }else{
                 return 1;
+            }else{
+                return -1;
             }
         }
     }
